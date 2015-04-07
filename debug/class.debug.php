@@ -1,4 +1,5 @@
 <?php
+include('constant.debug.php');
 class Pabana_Debug {
 	private $arbDebugShow;
 	private $arbDebugFile;
@@ -56,7 +57,7 @@ class Pabana_Debug {
 		$this->armEnvironment = array(
 			'date' => date('Y/m/d H:i:s'),
 			'memory' => round(memory_get_usage() / 1000000, 3),
-			'generation' => round(microtime(true) - $GLOBALS['pabanaInternalStorage']['PABANA_START_TIME'], 4) + 0.002
+			'generation' => round(microtime(true) - $GLOBALS['pabanaInternalStorage']['pabana']['startTime'], 4)
 		);
 		if($this->arbDebugShow[$nErrorLevel] == true) {
 			if(PH_CONSOLE == true) {
@@ -76,7 +77,7 @@ class Pabana_Debug {
 		}
 		// Stop application if error level is ERROR or CRITICAL
 		if($nErrorLevel >= 16) {
-			$GLOBALS['pabanaInternalStorage']['fatalException'] = 1;
+			$GLOBALS['pabanaInternalStorage']['pabana']['fatalException'] = 1;
 			exit(1);
 		}
     }

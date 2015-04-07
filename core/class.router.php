@@ -3,17 +3,31 @@ Class Pabana_Core_Router {
 	private $sModule;
 	private $sController;
 	private $arGetVariable = array();
+	private $sUri;
 	
-	public function __construct() {
-		$this->sModule = 'index';
-		$this->sController = 'index';
+	public function __construct($sRoutingType = 'default') {
+		$this->sUri = $_SERVER['REQUEST_URI'];
+		if($sRoutingType == 'default') {
+			$this->defaultRouting();
+		} else {
+			$this->mvcRouting();
+		}
+	}
+	
+	private function defaultRouting() {
+		$GLOBALS['pabanaInternalStorage']['router']['uri'] = $this->sUri;
+	}
+	
+	private function mvcRouting() {
+		$sModule = 'index';
+		$sController = 'index';
 		$arsUri = explode('/', $_SERVER['REQUEST_URI']);
 		$nSplitUri = count($arsUri);
 		if($nSplitUri >= 2 && !empty($arsUri[1])) {
-			$this->sModule = $arsUri[1];
+			$sModule = $arsUri[1];
 		}
 		if($nSplitUri >= 3 && !empty($arsUri[2])) {
-			$this->sController = $arsUri[2];
+			$sController = $arsUri[2];
 		}
 		$sKeyGetVariable = '';
 		for($i=3; $i<$nSplitUri; $i++) {
@@ -28,16 +42,10 @@ Class Pabana_Core_Router {
 			}
 		}
 		$_GET = $this->arGetVariable;
-		$GLOBALS['pabanaInternalStorage']['router']['module'] = $this->sModule;
-		$GLOBALS['pabanaInternalStorage']['router']['controller'] = $this->sController;
+		$GLOBALS['pabanaInternalStorage']['router']['module'] = $sModule;
+		$GLOBALS['pabanaInternalStorage']['router']['controller'] = $sController;
 	}
 	
-	public function getModule() {
-		return $this->sModule;
-	}
 	
-	public function getController() {
-		return $this->sController;
-	}
 }
 ?>

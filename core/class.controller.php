@@ -7,32 +7,30 @@ Class Pabana_Core_Controller {
 	
 	final public function __construct() {
 		$this->oView = new Pabana_Core_View();
-		$this->armConfigStorage = _configStorage();
-		if($this->armConfigStorage['layout']['enable'] == "true") {
+		if($GLOBALS['pabanaConfigStorage']['layout']['enable'] == "true") {
 			$this->bLayoutEnable = 1;
-			$this->sLayout = $this->armConfigStorage['layout']['default'];
+			$this->sLayout = $GLOBALS['pabanaConfigStorage']['layout']['default'];
 		}
 		if($this->bLayoutEnable == 1) {
-			include($this->armConfigStorage['pabana']['application_path'] . $this->armConfigStorage['layout']['path'] . '/' . $this->sLayout . '/layout.init.php');
+			include($GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['layout']['path'] . '/' . $this->sLayout . '/layout.init.php');
 		}
 		ob_start();
 	}
 	
 	final public function __destruct() {
-		if($GLOBALS['pabanaInternalStorage']['fatalException'] != 1 ) {
-			$this->armConfigStorage = _configStorage();
+		if($GLOBALS['pabanaInternalStorage']['pabana']['fatalException'] != 1 ) {
 			if($this->bViewEnable == 1) {
 				foreach($GLOBALS['pabanaInternalStorage']['viewBridge'] as $sVariableName=>$mVariable) {
 					${$sVariableName} = $mVariable;
 				}
-				$sViewPath = $this->armConfigStorage['pabana']['application_path'] . '/application/module/' . $GLOBALS['pabanaInternalStorage']['router']['module'] . '/view/view.' . $GLOBALS['pabanaInternalStorage']['router']['controller'] . '.php';
+				$sViewPath = $GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . '/application/module/' . $GLOBALS['pabanaInternalStorage']['router']['module'] . '/view/view.' . $GLOBALS['pabanaInternalStorage']['router']['controller'] . '.php';
 				include($sViewPath);
 			}
 			$sControllerCode = ob_get_contents();
 			ob_end_clean();
 			if($this->bLayoutEnable == 1) {
 				ob_start();
-				include($this->armConfigStorage['pabana']['application_path'] . $this->armConfigStorage['layout']['path'] . '/' . $this->sLayout . '/layout.' . $this->sLayout . '.php');
+				include($GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['layout']['path'] . '/' . $this->sLayout . '/layout.' . $this->sLayout . '.php');
 				$sLayoutCode = ob_get_contents();
 				ob_end_clean();
 				$sHtmlCode = str_replace('|s|CONTENT|s|', $sControllerCode, $sLayoutCode);
@@ -48,7 +46,7 @@ Class Pabana_Core_Controller {
 	
 	final public function setLayout($sLayoutName) {
 		$this->sLayout = $sLayoutName;
-		include($this->armConfigStorage['pabana']['application_path'] . $this->armConfigStorage['layout']['path'] . '/' . $this->sLayout . '/layout.init.php');
+		include($GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['layout']['path'] . '/' . $this->sLayout . '/layout.init.php');
 	}
 	
 	final public function enableLayout() {

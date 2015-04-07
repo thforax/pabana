@@ -1,13 +1,12 @@
 <?php
 class Pabana_Core {
+	// Public object for debug class
 	public $oPabanaDebug;
-	private $armConfigStorage;
+	public $oPabanaGlobal;
 	
 	public function __construct() {
 		// Include Pabana_Core constant
 		include('pabana/core/constant.core.php');
-		// Include Pabana_Core function
-		include('pabana/core/function.core.php');
 		// Include Pabana_Debug class
 		include('pabana/debug/class.debug.php');
 		// Initialise Pabana_Debug class
@@ -18,16 +17,32 @@ class Pabana_Core {
 		$this->checkPhpVersion();
 		// Load class autoloader function
 		$this->autoLoader();
-		// Get default configuration
-		$this->getDefaultConfiguration();
+		// Load Global method of Pabana_Core
+		$this->oPabanaGlobal = new Pabana_Core_Global();
     }
 	
 	private function setLocalStorage() {
-		$GLOBALS['pabanaInternalStorage']['PABANA_START_TIME'] = microtime(true);
-		$GLOBALS['pabanaInternalStorage']['fatalException'] = 0;
-		$GLOBALS['pabanaInternalStorage']['viewBridge'] = array();
-		$GLOBALS['pabanaInternalStorage']['database'] = array();
-		$GLOBALS['pabanaConfigStorage'] = array();
+		$GLOBALS['pabanaConfigStorage'] = array(
+			'debug' => array(
+				'show_level' => PE_ALL
+			),
+			'bootstrap' => array(
+				'bootstrap_enable' => false
+			),
+			'mvc' => array(
+				'mvc_enable' => false
+			)
+		);
+		$GLOBALS['pabanaInternalStorage'] = array(
+			'database' => array(),
+			'layoutBridge' => array(),
+			'pabana' => array(
+				'startTime' => $_SERVER['REQUEST_TIME_FLOAT'],
+				'fatalException' => 0
+			),
+			'router' => array(),
+			'viewBridge' => array()
+		);
 		$GLOBALS['pabanaUserStorage'] = array();
 	}
 	
@@ -43,36 +58,35 @@ class Pabana_Core {
 	private function autoLoader() {
 		// Declare new autoload function
 		spl_autoload_register(function($sAutoLoadClass) {
+			// Check if autoload function is ask by Pabana
 			if(stripos($sAutoLoadClass, 'Pabana') !== false) {
+				// Explode class name in array
 				$arsAutoLoadClass = explode('_', $sAutoLoadClass);
+				// Generate directory path for class
 				$sGeneralPath = strtolower($arsAutoLoadClass[0]) . '/' . strtolower($arsAutoLoadClass[1]) . '/';
 				if(count($arsAutoLoadClass) == 2) {
 					$sClassPath = $sGeneralPath . 'class.' . strtolower($arsAutoLoadClass[1]) . '.php';
+					$sConstantPath = $sGeneralPath . 'constant.' . strtolower($arsAutoLoadClass[1]) . '.php';
 				} elseif(count($arsAutoLoadClass) == 3) {
 					$sClassPath = $sGeneralPath . 'class.' . strtolower($arsAutoLoadClass[2]) . '.php';
+					$sConstantPath = $sGeneralPath . 'constant.' . strtolower($arsAutoLoadClass[1]) . '.php';
 				}
+				// If exists include class file
 				if(stream_resolve_include_path($sClassPath)) {
 					include($sClassPath);
 				} else {
+					// Show error message coz class file don't exists
 					$sErrorMessage = 'Autoloading of "' . $sAutoLoadClass . '" abort, cause "' . $sClassPath . '" file can\'t be read';
 					$this->oPabanaDebug->exception(PE_ERROR, 'CLASS_AUTOLOAD', $sErrorMessage);
 				}
+			} else {
+				// Try to call user defined autoloader
+				if(function_exists('customAutoLoader')) {
+					// If exists call it
+					customAutoLoader($sAutoLoadClass);
+				}
 			}
 		});
-	}
-	
-	private function getDefaultConfiguration() {
-		$GLOBALS['pabanaConfigStorage'] = array(
-			'debug' => array(
-				'show_level' => PE_ALL
-			),
-			'bootstrap' => array(
-				'bootstrap_enable' => false
-			),
-			'mvc' => array(
-				'mvc_enable' => false
-			)
-		);
 	}
 	
 	public function getConfigByFile($sConfigPath) {
@@ -103,45 +117,65 @@ class Pabana_Core {
 	}
 	
 	public function run() {
-		// Load php configuration form paban config file
-		$this->armConfigStorage = _configStorage();
-		// Include Pabana Bootstrap file
-		if($this->armConfigStorage['bootstrap']['enable'] == true) {
-			// Include Pabana Bootstrap
-			$sBootstrapPath = $this->armConfigStorage['pabana']['application_path'] . $this->armConfigStorage['bootstrap']['path'];
-			$oBootstrap = new Pabana_File($sBootstrapPath);
-			if($oBootstrap->exists()) {
-				$oBootstrap->import();
-			} else {
-				$sErrorMessage = 'Loading of "Bootstrap" abort, cause "' . $oBootstrap . '" file can\'t be read';
-				$this->oPabanaDebug->exception(PE_ERROR, 'BOOTSTRAP_LOAD', $sErrorMessage);
+		// Check if a bootstrap file must be load
+		if($GLOBALS['pabanaConfigStorage']['bootstrap']['enable'] == true) {
+			$this->runBootstrap();
+		}
+		// Check if Pabana is launch on MVC mode
+		if($GLOBALS['pabanaConfigStorage']['mvc']['enable'] == true) {
+			$oPabanaCoreRouter = new Pabana_Core_Router('mvc');
+			$this->runMvc($GLOBALS['pabanaInternalStorage']['router']['module'], $GLOBALS['pabanaInternalStorage']['router']['controller']);
+		} else {
+			//Check if Pabana is launch on router mode
+			if($GLOBALS['pabanaConfigStorage']['bootstrap']['router'] == true) {
+				$sUriFile = $GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaInternalStorage']['router']['uri'];
+				$oUriFile = new Pabana_File($sUriFile);
+				if($oUriFile->exists()) {
+					$oUriFile->import();
+				} else {
+					header($_SERVER['SERVER_PROTOCOL'].' 404 Not Found', true, 404); 
+					$sErrorMessage = 'Loading of "URI_FILE" abort, cause "' . $oUriFile . '" file can\'t be read';
+					$this->oPabanaDebug->exception(PE_WARNING, 'URI_FILE_LOAD', $sErrorMessage);
+					exit();
+				}
 			}
 		}
-		if($this->armConfigStorage['mvc']['enable'] == true) {
-			// Load Pabana Router
-			$oPabanaCoreRouter = new Pabana_Core_Router();
-			$sControllerPath = $this->armConfigStorage['pabana']['application_path'] . $this->armConfigStorage['mvc']['module_path'] . '/' . $oPabanaCoreRouter->getModule() . '/controller.' . $oPabanaCoreRouter->getModule() . '.php';
-			$oControllerFile = new Pabana_File($sControllerPath);
-			if($oControllerFile->exists()) {
-				$oControllerFile->import();
-				$sControllerClassName = $oPabanaCoreRouter->getModule() . 'Module';
-				$oController = new $sControllerClassName();
-				if(method_exists($sControllerClassName, 'initController')) {
-					$oController->initController();
-				}
-				$sControllerName = $oPabanaCoreRouter->getController() . "Controller";
-				if(!method_exists($sControllerClassName, $sControllerName)) {
-					$sErrorMessage = 'Loading of "' . $sControllerClassName . '" abort, cause "' . $sControllerName . '" isn\'t defined';
-					$this->oPabanaDebug->exception(PE_ERROR, 'CONTROLLER_LOAD', $sErrorMessage);
-				}
-				$oController->{$sControllerName}();
-				$oController = null;
-			} else {
-				header($_SERVER['SERVER_PROTOCOL'].' 404 Not Found', true, 404); 
-				$sErrorMessage = 'Loading of "controller.' . $oPabanaCoreRouter->getController() . '.php" abort, cause "' . $oControllerFile . '" file can\'t be read';
-				$this->oPabanaDebug->exception(PE_ERROR, 'CONTROLLER_LOAD', $sErrorMessage);
-				exit();
+	}
+	
+	private function runBootstrap() {
+		// Include Pabana Bootstrap
+		$sBootstrapPath = $GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['bootstrap']['path'];
+		$oBootstrapFile = new Pabana_File($sBootstrapPath);
+		if($oBootstrapFile->exists()) {
+			$oBootstrapFile->import();
+		} else {
+			$sErrorMessage = 'Loading of "Bootstrap" abort, cause "' . $oBootstrapFile . '" file can\'t be read';
+			$this->oPabanaDebug->exception(PE_ERROR, 'BOOTSTRAP_LOAD', $sErrorMessage);
+		}
+	}
+	
+	private function runMvc($sModule, $sController) {
+		$sControllerPath = $GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['mvc']['module_path'] . '/' . $sModule . '/controller.' . $sModule . '.php';
+		$oControllerFile = new Pabana_File($sControllerPath);
+		if($oControllerFile->exists()) {
+			$oControllerFile->import();
+			$sControllerClassName = $sModule . 'Module';
+			$oController = new $sControllerClassName();
+			if(method_exists($sControllerClassName, 'initController')) {
+				$oController->initController();
 			}
+			$sControllerName = $sController . "Controller";
+			if(!method_exists($sControllerClassName, $sControllerName)) {
+				$sErrorMessage = 'Loading of "' . $sControllerClassName . '" abort, cause "' . $sControllerName . '" isn\'t defined';
+				$this->oPabanaDebug->exception(PE_ERROR, 'CONTROLLER_LOAD', $sErrorMessage);
+			}
+			$oController->{$sControllerName}();
+			$oController = null;
+		} else {
+			header($_SERVER['SERVER_PROTOCOL'].' 404 Not Found', true, 404); 
+			$sErrorMessage = 'Loading of "controller.' . $sController . '.php" abort, cause "' . $oControllerFile . '" file can\'t be read';
+			$this->oPabanaDebug->exception(PE_WARNING, 'CONTROLLER_LOAD', $sErrorMessage);
+			exit();
 		}
 	}
 }

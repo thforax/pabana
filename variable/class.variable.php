@@ -7,8 +7,7 @@ class Pabana_Variable {
 		$this->mVariable = $mVariable;
     }
 	
-	public function __toString()
-    {
+	public function __toString() {
         return $this->get();
     }
 	
