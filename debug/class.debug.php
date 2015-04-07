@@ -7,6 +7,7 @@ class Pabana_Debug {
 	private $bDebugBacktrace;
 	private $bDebugVariable;
 	private $sDebugFile;
+	private $cnxDebugDatabase;
 	private $arsErrorLevel = array(
 		1 => 'DEBUG',
 		2 => 'INFO',
@@ -16,7 +17,7 @@ class Pabana_Debug {
 		32 => 'CRITICAL'
 	);
 	
-	public function __construct($nDebugShow = 0, $nDebugFile = 0, $nDebugDatabase = 0, $bDebugEnvironment = true, $bDebugBacktrace = false, $bDebugLink = false) {
+	public function __construct($nDebugShow = 0, $nDebugFile = 0, $nDebugDatabase = 0, $bDebugEnvironment = true, $bDebugBacktrace = true, $bDebugLink = true) {
 		$this->arbDebugShow = $this->getIntToArrayDebug($nDebugShow);
 		$this->arbDebugFile = $this->getIntToArrayDebug($nDebugFile);
 		$this->arbDebugDatabase = $this->getIntToArrayDebug($nDebugDatabase);
@@ -27,6 +28,10 @@ class Pabana_Debug {
 	
 	public function setDebugFile($sDebugFile) {
 		$this->sDebugFile = $sDebugFile;
+	}
+	
+	public function setDebugDatabase($cnxDebugDatabase) {
+		$this->cnxDebugDatabase = $cnxDebugDatabase;
 	}
 	
 	private function getIntToArrayDebug($nDebugLevel) {

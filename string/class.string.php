@@ -2,7 +2,7 @@
 class Pabana_String {
 	private $sVariable;
 	
-	public function __construct($sVariable) {
+	public function __construct($sVariable = '') {
 		$this->sVariable = $sVariable;
     }
 	
@@ -20,6 +20,7 @@ class Pabana_String {
 	
 	public function concat($sConcat) {
 		$this->sVariable .= $sConcat;
+		return $this;
     }
 	
 	public function contains($sSearch) {
@@ -39,7 +40,8 @@ class Pabana_String {
     }
 	
 	public function escape() {
-		return htmlentities($this->sVariable);
+		$this->sVariable = htmlentities($this->sVariable);
+		return $this;
     }
 	
 	public function toArray($sDelimiter) {
@@ -47,11 +49,54 @@ class Pabana_String {
     }
 	
 	public function toLowerCase($sDelimiter) {
-		return strtolower($this->sVariable);
+		$this->sVariable = strtolower($this->sVariable);
+		return $this;
     }
 	
 	public function toUpperCase($sDelimiter) {
-		return strtoupper($this->sVariable);
+		$this->sVariable = strtoupper($this->sVariable);
+		return $this;
     }
+	
+	public function createPassword($nCharNbr, $nCharAllow = 15, $sPersonnalChar = '') {
+		$sChar = '';
+		if(!empty($sPersonnalChar)) {
+			$sChar = $sPersonnalChar;
+		} else {
+			if($nCharAllow >=8) {
+				$sChar .= '~!@#$%^&*()-_=+[]{};:,.<>/?';
+				$nCharAllow -= 8;
+			}
+			if($nCharAllow >=4) {
+				$sChar .= implode('', range(0, 9));
+				$nCharAllow -= 4;
+			}
+			if($nCharAllow >=2) {
+				$sChar .= implode('', range('A', 'Z'));
+				$nCharAllow -= 2;
+			}
+			if($nCharAllow >=1) {
+				$sChar .= implode('', range('a', 'z'));
+				$nCharAllow -= 1;
+			}
+		}
+		$sPassword = '';
+		$nCharLen = strlen($sChar);
+		for($i=0; $i<$nCharNbr; $i++) {
+			$nCharPos = mt_rand(0,($nCharLen-1));
+			$sPassword .= $sChar[$nCharPos];
+		}
+		$this->sVariable = $sPassword;
+		return $this;
+	}
+	
+	public function passwordHash($sPassword) {
+		$this->sVariable = password_hash($sPassword, PASSWORD_DEFAULT);
+		return $this;
+	}
+	
+	public function passwordVerify($sPassword, $sHash) {
+		return password_verify($sPassword, $sHash);
+	}
 }
 ?>

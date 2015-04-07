@@ -52,10 +52,6 @@ Class Pabana_Core_Controller {
 		}
 	}
 	
-	final public function getContent() {
-		return $this->sControllerContent;
-	}
-	
 	final public function disableLayout() {
 		$this->bLayoutEnable = 0;
 	}
@@ -70,6 +66,10 @@ Class Pabana_Core_Controller {
 	
 	final public function enableView() {
 		$this->bViewEnable = 1;
+	}
+	
+	final public function getContent() {
+		return $this->sControllerContent;
 	}
 	
 	final public function getModel($sModelName) {
