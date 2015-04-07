@@ -4,9 +4,13 @@ Class Pabana_Core_Controller {
 	private $bViewEnable = 1;
 	private $bLayoutEnable = 0;
 	private $sLayout;
+	private $sView;
+	private $sControllerContent = '';
+	private $sHtmlContent = '';
 	
 	final public function __construct() {
-		$this->oView = new Pabana_Core_View();
+		$this->oView = new Pabana_Dom();
+		$this->sView = $GLOBALS['pabanaInternalStorage']['router']['controller'];
 		if($GLOBALS['pabanaConfigStorage']['layout']['enable'] == "true") {
 			$this->bLayoutEnable = 1;
 			$this->sLayout = $GLOBALS['pabanaConfigStorage']['layout']['default'];
@@ -23,25 +27,55 @@ Class Pabana_Core_Controller {
 				foreach($GLOBALS['pabanaInternalStorage']['viewBridge'] as $sVariableName=>$mVariable) {
 					${$sVariableName} = $mVariable;
 				}
-				$sViewPath = $GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . '/application/module/' . $GLOBALS['pabanaInternalStorage']['router']['module'] . '/view/view.' . $GLOBALS['pabanaInternalStorage']['router']['controller'] . '.php';
+				$sViewPath = $GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . '/application/module/' . $GLOBALS['pabanaInternalStorage']['router']['module'] . '/view/view.' . $this->sView . '.php';
 				include($sViewPath);
 			}
-			$sControllerCode = ob_get_contents();
+			$this->sControllerContent = ob_get_contents();
 			ob_end_clean();
 			if($this->bLayoutEnable == 1) {
+				foreach($GLOBALS['pabanaInternalStorage']['layoutBridge'] as $sVariableName=>$mVariable) {
+					${$sVariableName} = $mVariable;
+				}
 				ob_start();
-				include($GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['layout']['path'] . '/' . $this->sLayout . '/layout.' . $this->sLayout . '.php');
-				$sLayoutCode = ob_get_contents();
+				$sLayoutPath = $GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['layout']['path'] . '/';
+				$sLayoutPath .= $this->sLayout . '/layout.' . $this->sLayout . '.php';
+				include($sLayoutPath);
+				$this->sHtmlContent = ob_get_contents();
 				ob_end_clean();
-				$sHtmlCode = str_replace('|s|CONTENT|s|', $sControllerCode, $sLayoutCode);
 			} else {
-				$sHtmlCode = $sControllerCode;
+				$this->sHtmlContent = $this->sControllerContent;
 			}
 			// Show generate HTML code
-			echo $sHtmlCode;
+			echo $this->sHtmlContent;
 		} else {
 			ob_end_flush();
 		}
+	}
+	
+	final public function getContent() {
+		return $this->sControllerContent;
+	}
+	
+	final public function disableLayout() {
+		$this->bLayoutEnable = 0;
+	}
+	
+	final public function disableView() {
+		$this->bViewEnable = 0;
+	}
+	
+	final public function enableLayout() {
+		$this->bLayoutEnable = 1;
+	}
+	
+	final public function enableView() {
+		$this->bViewEnable = 1;
+	}
+	
+	final public function getModel($sModelName) {
+		include($GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['mvc']['model_path'] . '/model.' . $sModelName . '.php');
+		$sModelClassName = $sModelName . 'Model';
+		return new $sModelClassName();
 	}
 	
 	final public function setLayout($sLayoutName) {
@@ -49,12 +83,12 @@ Class Pabana_Core_Controller {
 		include($GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['layout']['path'] . '/' . $this->sLayout . '/layout.init.php');
 	}
 	
-	final public function enableLayout() {
-		$this->bLayoutEnable = 1;
+	final public function setView($sViewName) {
+		$this->sView = $sViewName;
 	}
 	
-	final public function disableLayout() {
-		$this->bLayoutEnable = 0;
+	final public function toLayout($sVariableName, $mVariable) {
+		$GLOBALS['pabanaInternalStorage']['layoutBridge'][$sVariableName] = $mVariable;
 	}
 	
 	final public function toView($sVariableName, $mVariable) {
