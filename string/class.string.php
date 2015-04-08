@@ -98,5 +98,17 @@ class Pabana_String {
 	public function passwordVerify($sPassword, $sHash) {
 		return password_verify($sPassword, $sHash);
 	}
+	
+	public function fluf() {
+		$arsReturnText = array(
+			'Invite your Grandpa to code with Pabana, you will get a GrandPabana',
+			'&lt;?php _pe("Pabana rocks"); ?&gt;',
+			'Without Herobrine',
+			'(PHP + Pabana) == <3'
+		);
+		shuffle($arsReturnText);
+		$this->sVariable = $arsReturnText[0];
+		return $this;
+	}
 }
 ?>
