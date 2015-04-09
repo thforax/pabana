@@ -79,6 +79,7 @@ Class Pabana_Core_Controller {
 	}
 	
 	final public function setLayout($sLayoutName) {
+		$this->oView = new Pabana_Dom();
 		$this->sLayout = $sLayoutName;
 		include($GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['layout']['path'] . '/' . $this->sLayout . '/layout.init.php');
 	}
