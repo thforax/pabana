@@ -48,12 +48,12 @@ class Pabana_String {
 		return explode($sDelimiter, $this->sVariable);
     }
 	
-	public function toLowerCase($sDelimiter) {
+	public function toLowerCase() {
 		$this->sVariable = strtolower($this->sVariable);
 		return $this;
     }
 	
-	public function toUpperCase($sDelimiter) {
+	public function toUpperCase() {
 		$this->sVariable = strtoupper($this->sVariable);
 		return $this;
     }
@@ -108,6 +108,11 @@ class Pabana_String {
 		);
 		shuffle($arsReturnText);
 		$this->sVariable = $arsReturnText[0];
+		return $this;
+	}
+	
+	public function toNonAccented($sCurrentCharset = 'utf-8') {
+		$this->sVariable = iconv($sCurrentCharset, 'ASCII//TRANSLIT//IGNORE', $this->sVariable);
 		return $this;
 	}
 }
