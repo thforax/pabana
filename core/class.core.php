@@ -1,4 +1,24 @@
 <?php
+/**
+* Pabana Framework : Core Module (http://pabana.co)
+*
+* Licensed under new BSD License
+* For full copyright and license information, please see the LICENSE.txt
+*
+* @link      	http://github.com/thforax/pabana for the canonical source repository
+* @copyright 	Copyright (c) 2014-2015 FuturaSoft (http://www.futurasoft.net)
+* @license   	http://pabana.co/about/license New BSD License
+* @version		1.0.0.0
+*/
+
+/**
+ * Initialize Pabana Framework
+ *
+ * Long description of class.
+ * Can use multiple lines.
+ *
+ * @link http://pabana.co/documentation/class/name/core
+ */
 class Pabana_Core {
 	// Public object for debug class
 	public $oPabanaDebug;
@@ -22,6 +42,7 @@ class Pabana_Core {
     }
 	
 	private function setLocalStorage() {
+		// Init pabana default configuration
 		$GLOBALS['pabanaConfigStorage'] = array(
 			'debug' => array(
 				'show_level' => PE_ALL
@@ -33,6 +54,7 @@ class Pabana_Core {
 				'mvc_enable' => false
 			)
 		);
+		// Init pabana internal variable storage
 		$GLOBALS['pabanaInternalStorage'] = array(
 			'database' => array(),
 			'layoutBridge' => array(),
@@ -43,6 +65,7 @@ class Pabana_Core {
 			'router' => array(),
 			'viewBridge' => array()
 		);
+		// Init pabana user variable storage
 		$GLOBALS['pabanaUserStorage'] = array();
 	}
 	
@@ -65,9 +88,11 @@ class Pabana_Core {
 				// Generate directory path for class
 				$sGeneralPath = strtolower($arsAutoLoadClass[0]) . '/' . strtolower($arsAutoLoadClass[1]) . '/';
 				if(count($arsAutoLoadClass) == 2) {
+					// Autoloader class name eq Pabana_Module
 					$sClassPath = $sGeneralPath . 'class.' . strtolower($arsAutoLoadClass[1]) . '.php';
 					$sConstantPath = $sGeneralPath . 'constant.' . strtolower($arsAutoLoadClass[1]) . '.php';
 				} elseif(count($arsAutoLoadClass) == 3) {
+					// Autoloader class name eq Pabana_Module_Class
 					$sClassPath = $sGeneralPath . 'class.' . strtolower($arsAutoLoadClass[2]) . '.php';
 					$sConstantPath = $sGeneralPath . 'constant.' . strtolower($arsAutoLoadClass[1]) . '.php';
 				}
@@ -90,10 +115,13 @@ class Pabana_Core {
 	}
 	
 	public function getConfigByFile($sConfigPath) {
+		// Initialize Pabana_File class for config file
 		$oConfigFile = new Pabana_File($sConfigPath);
+		// Check if this file exists
 		if(!$oConfigFile->exists()) {
 			$this->oPabanaDebug->exception(PE_WARNING, 'CORE_CONFIG_FILE', 'File ' . $oConfigFile . ' isn\'t found');
 		}
+		// Get extension of this file
 		$sConfigFileExtension = $oConfigFile->getExtension();
 		if($sConfigFileExtension == 'json') {
 			$oConfigFileParse = new Pabana_Parse_Json($oConfigFile);
@@ -105,13 +133,18 @@ class Pabana_Core {
 			$sErrorMessage = '*.' . $sConfigFileExtension . ' file isn\'t accepted by <strong>Pabana_Debug->getConfigByFile()</strong>';
 			$this->oPabanaDebug->exception(PE_WARNING, 'CORE_CONFIG_FILETYPE', $sErrorMessage);
 		}
+		// Put parse content on array
 		$armConfig = $oConfigFileParse->toArray();
+		// Merge config
 		$this->getConfigByArray($armConfig);
 	}
 	
 	public function getConfigByArray($armConfig) {
+		// Merge config on array with default configuration
 		$GLOBALS['pabanaConfigStorage'] = $armConfig['global'] + $GLOBALS['pabanaConfigStorage'];
+		// Check if config file have a config dependant of environnement
 		if(isset($armConfig[APPLICATION_ENV])) {
+			// Merge environnement config on array with default configuration
 			$GLOBALS['pabanaConfigStorage'] = $armConfig[APPLICATION_ENV] + $GLOBALS['pabanaConfigStorage'];
 		}
 	}

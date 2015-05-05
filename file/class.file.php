@@ -5,6 +5,10 @@
 * Licensed under new BSD License
 * For full copyright and license information, please see the LICENSE.txt
 *
+* @link      	http://github.com/thforax/pabana for the canonical source repository
+* @copyright 	Copyright (c) 2014-2015 FuturaSoft (http://www.futurasoft.net)
+* @license   	http://pabana.co/about/license New BSD License
+* @version		1.0.0.0
 */
 class Pabana_File {
 	private $sFilePath;
