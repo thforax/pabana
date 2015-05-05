@@ -1,6 +1,14 @@
 <?php
+/**
+* Pabana : File Class (http://pabana.co)
+*
+* Licensed under new BSD License
+* For full copyright and license information, please see the LICENSE.txt
+*
+*/
 class Pabana_File {
 	private $sFilePath;
+	private $hFile;
 	
 	public function __construct($sFilePath = '') {
 		$this->sFilePath = $sFilePath;
@@ -9,6 +17,11 @@ class Pabana_File {
 	public function __toString() {
 		return $this->sFilePath;
     }
+	
+	public function append($sFileContent) {
+		file_put_contents($this->sFilePath, $sFileContent, FILE_APPEND);
+		return $this;
+	}
 	
 	public function canExecute() {
 		return is_executable($this->sFilePath);
@@ -22,6 +35,21 @@ class Pabana_File {
 		return is_writable($this->sFilePath);
 	}
 	
+	public function close() {
+		fclose($this->hFile);
+		return $this;
+	}
+	
+	public function copy($sNewFilePath) {
+		copy($this->sFilePath, $sNewFilePath);
+		return $this;
+	}
+	
+	public function create() {
+		touch($this->sFilePath);
+		return $this;
+	}
+	
 	public function exists() {
 		return is_file($this->sFilePath);
 	}
@@ -30,16 +58,56 @@ class Pabana_File {
 		return realpath($this->sFilePath);
 	}
 	
-	public function getContent() {
-		return file_get_contents($this->sFilePath);
+	public function getAccessTime() {
+		return fileatime($this->sFilePath);
+	}
+	
+	public function getEncoding() {
+		$oFileInfo = new finfo(FILEINFO_MIME_ENCODING);
+		$sEncoding = $oFileInfo->file($this->sFilePath);
+		$oFileInfo->close();
+		return $sEncoding;
 	}
 	
 	public function getExtension() {
 		return pathinfo($this->sFilePath, PATHINFO_EXTENSION);
 	}
 	
+	public function getHandler() {
+		return $this->hFile;
+	}
+	
+	public function getMimeType() {
+		$oFileInfo = new finfo(FILEINFO_MIME_TYPE);
+		$sMimeType = $oFileInfo->file($this->sFilePath);
+		$oFileInfo->close();
+		return $sMimeType;
+	}
+	
+	public function getModifyTime() {
+		return filemtime($this->sFilePath);
+	}
+	
+	public function getName() {
+		return basename($this->sFilePath);
+	}
+	
+	public function getParent() {
+		return dirname($this->sFilePath);
+	}
+	
+	public function getSize() {
+		return filesize($this->sFilePath);
+	}
+	
+	public function group($mNewGroup) {
+		chgrp($this->sFilePath, $mNewGroup);
+		return $this;
+	}
+	
 	public function import() {
 		include($this->sFilePath);
+		return $this;
 	}
 	
 	public function isDir() {
@@ -58,12 +126,52 @@ class Pabana_File {
 		return is_uploaded_file($this->sFilePath);
 	}
 	
-	public function name() {
-		return basename($this->sFilePath);
+	public function move($sNewFilePath) {
+		rename($this->sFilePath, $sNewFilePath);
+		return $this;
 	}
 	
-	public function size() {
-		return filesize($this->sFilePath);
+	public function open($sFileOpenMode, $bFileOpenBinary = true) {
+		if($bFileOpenBinary == true) {
+			$sFileOpenMode .= 'b';
+		}
+		$this->hFile = fopen($this->sFilePath, $sFileOpenMode);
+		return $this;
+	}
+	
+	public function owner($sNewFileOwner) {
+		chown($this->sFilePath, $sNewFileOwner);
+		return $this;
+	}
+	
+	public function permission($nNewPermission) {
+		chmod($this->sFilePath, $nNewPermission);
+		return $this;
+	}
+	
+	public function prepend($sFileContent) {
+		$sFileContent = $sFileContent . $this->read();
+		file_put_contents($this->sFilePath, $sFileContent);
+		return $this;
+	}
+	
+	public function read() {
+		return file_get_contents($this->sFilePath);
+	}
+	
+	public function rename($sNewFileName) {
+		$this->move($sNewFileNam);
+		return $this;
+	}
+	
+	public function remove() {
+		unlink($this->sFilePath);
+		return $this;
+	}
+	
+	public function write($sFileContent) {
+		file_put_contents($this->sFilePath, $sFileContent);
+		return $this;
 	}
 }
 ?>
