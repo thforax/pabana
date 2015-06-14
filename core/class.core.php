@@ -56,6 +56,7 @@ class Pabana_Core {
 		);
 		// Init pabana internal variable storage
 		$GLOBALS['pabanaInternalStorage'] = array(
+			'debug' => null,
 			'database' => array(),
 			'layoutBridge' => array(),
 			'pabana' => array(

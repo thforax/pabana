@@ -101,25 +101,39 @@ Class Pabana_Dom {
 	/*
 	Script
 	*/	
-	public function appendScript($sScriptPath, $sMimeType = 'text/javascript', $arsAttribs = array()) {
-		$this->arsHtmlScript[] = array($sScriptPath, $sMimeType, $arsAttribs);
+	public function appendFileScript($sScriptPath, $sMimeType = 'text/javascript', $arsAttribs = array()) {
+		$this->arsHtmlScript[] = array(1, $sScriptPath, $sMimeType, $arsAttribs);
 		return $this;
 	}
 	
-	public function prependScript($sScriptPath, $sMimeType = 'text/javascript', $arsAttribs = array()) {
-		array_unshift($this->arsHtmlScript, array($sStylePath, $sMimeType, $arsAttribs));
+	public function prependFileScript($sScriptPath, $sMimeType = 'text/javascript', $arsAttribs = array()) {
+		array_unshift($this->arsHtmlScript, array(1, $sScriptPath, $sMimeType, $arsAttribs));
+		return $this;
+	}
+	
+	public function appendScript($sScript, $sMimeType = 'text/javascript', $arsAttribs = array()) {
+		$this->arsHtmlScript[] = array(0, $sScript, $sMimeType, $arsAttribs);
+		return $this;
+	}
+	
+	public function prependScript($sScript, $sMimeType = 'text/javascript', $arsAttribs = array()) {
+		array_unshift($this->arsHtmlScript, array(0, $sScript, $sMimeType, $arsAttribs));
 		return $this;
 	}
 	
 	public function getScript() {
 		$arsHtmlScript = '';
 		foreach($this->arsHtmlScript as $arsScript) {
-			if(isset($arsScript[2]['conditional'])) {
-				$arsHtmlScript .= '<!--[if ' . $arsScript[2]['conditional'] . ']>';
+			if(isset($arsScript[3]['conditional'])) {
+				$arsHtmlScript .= '<!--[if ' . $arsScript[3]['conditional'] . ']>';
 			}
-			$arsHtmlScript .= '<script src="' . $arsScript[0] . '" type="' . $arsScript[1] . '"';
-			$arsHtmlScript .= '></script>';
-			if(isset($arsScript[2]['conditional'])) {
+			if($arsScript[0] == 1) {
+				$arsHtmlScript .= '<script src="' . $arsScript[1] . '" type="' . $arsScript[2] . '"></script>';
+			}
+			if($arsScript[0] == 0) {
+				$arsHtmlScript .= '<script type="' . $arsScript[2] . '">' . $arsScript[1] . '</script>';
+			}
+			if(isset($arsScript[3]['conditional'])) {
 				$arsHtmlScript .= '<![endif]-->';
 			}
 			$arsHtmlScript .= PHP_EOL;

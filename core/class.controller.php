@@ -73,8 +73,10 @@ Class Pabana_Core_Controller {
 	}
 	
 	final public function getModel($sModelName) {
-		include($GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['mvc']['model_path'] . '/model.' . $sModelName . '.php');
 		$sModelClassName = $sModelName . 'Model';
+		if(!class_exists($sModelClassName)) {
+			include($GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['mvc']['model_path'] . '/model.' . $sModelName . '.php');
+		}
 		return new $sModelClassName();
 	}
 	

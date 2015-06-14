@@ -67,9 +67,9 @@ class Pabana_File {
 	}
 	
 	public function getEncoding() {
-		$oFileInfo = new finfo(FILEINFO_MIME_ENCODING);
-		$sEncoding = $oFileInfo->file($this->sFilePath);
-		$oFileInfo->close();
+		$hFileInfo = finfo_open(FILEINFO_MIME_ENCODING);
+		$sEncoding = finfo_file($hFileInfo, $this->sFilePath);
+		finfo_close($hFileInfo);
 		return $sEncoding;
 	}
 	
@@ -82,9 +82,9 @@ class Pabana_File {
 	}
 	
 	public function getMimeType() {
-		$oFileInfo = new finfo(FILEINFO_MIME_TYPE);
-		$sMimeType = $oFileInfo->file($this->sFilePath);
-		$oFileInfo->close();
+		$hFileInfo = finfo_open(FILEINFO_MIME_TYPE);
+		$sMimeType = finfo_file($hFileInfo, $this->sFilePath);
+		finfo_close($hFileInfo);
 		return $sMimeType;
 	}
 	
@@ -131,7 +131,11 @@ class Pabana_File {
 	}
 	
 	public function move($sNewFilePath) {
-		rename($this->sFilePath, $sNewFilePath);
+		if(is_uploaded_file($this->sFilePath)) {
+			move_uploaded_file($this->sFilePath, $sNewFilePath);
+		} else {
+			rename($this->sFilePath, $sNewFilePath);
+		}
 		return $this;
 	}
 	
