@@ -107,7 +107,7 @@ class Pabana_Debug {
     }
 	
 	private function exceptionHtml() {
-		$sErrorUrl = 'http://pabana.com/doc/error/err_id/' . $this->armError['code'];
+		$sErrorUrl = 'http://pabana.co/documentation/error/err_id/' . $this->armError['code'];
 		$sCssStyle = 'border: 1px solid; margin: 10px; padding: 10px; border-radius: 5px; font-size: 14px; font-weight:normal; text-transformation:none; font-family:verdana;';
 		if($this->armError['level'] >= 16) {
 			$sCssStyle .= ' color: #D8000C; background-color: #FFBABA;';
