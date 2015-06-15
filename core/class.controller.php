@@ -80,6 +80,10 @@ Class Pabana_Core_Controller {
 		return new $sModelClassName();
 	}
 	
+	final public function getLayoutPart($sPartName) {
+		include($GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['layout']['path'] . '/' . $this->sLayout . '/layout.' . $sPartName . '.php');
+	}
+	
 	final public function setLayout($sLayoutName) {
 		$this->oView = new Pabana_Dom();
 		$this->sLayout = $sLayoutName;
