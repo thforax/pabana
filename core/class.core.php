@@ -56,8 +56,9 @@ class Pabana_Core {
 		);
 		// Init pabana internal variable storage
 		$GLOBALS['pabanaInternalStorage'] = array(
-			'debug' => null,
 			'database' => array(),
+			'debug' => null,
+			'dom' => null,
 			'layoutBridge' => array(),
 			'pabana' => array(
 				'startTime' => $_SERVER['REQUEST_TIME_FLOAT'],

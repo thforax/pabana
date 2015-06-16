@@ -1,6 +1,7 @@
 <?php
 Class Pabana_Core_Controller {
 	public $oView;
+	private $oLayout;
 	private $bViewEnable = 1;
 	private $bLayoutEnable = 0;
 	private $sLayout;
@@ -9,19 +10,20 @@ Class Pabana_Core_Controller {
 	private $sHtmlContent = '';
 	
 	final public function __construct() {
+		// Initialize Dom class
 		$this->oView = new Pabana_Dom();
 		$this->sView = $GLOBALS['pabanaInternalStorage']['router']['controller'];
+		// Check if layout are enable
 		if($GLOBALS['pabanaConfigStorage']['layout']['enable'] == "true") {
+			$this->oLayout = new Pabana_Dom();
 			$this->bLayoutEnable = 1;
 			$this->sLayout = $GLOBALS['pabanaConfigStorage']['layout']['default'];
-		}
-		if($this->bLayoutEnable == 1) {
-			include($GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['layout']['path'] . '/' . $this->sLayout . '/layout.init.php');
 		}
 		ob_start();
 	}
 	
 	final public function __destruct() {
+		// Check if a fatal exception was catched by Pabana_Debug
 		if($GLOBALS['pabanaInternalStorage']['pabana']['fatalException'] != 1 ) {
 			if($this->bViewEnable == 1) {
 				foreach($GLOBALS['pabanaInternalStorage']['viewBridge'] as $sVariableName=>$mVariable) {
@@ -33,15 +35,7 @@ Class Pabana_Core_Controller {
 			$this->sControllerContent = ob_get_contents();
 			ob_end_clean();
 			if($this->bLayoutEnable == 1) {
-				foreach($GLOBALS['pabanaInternalStorage']['layoutBridge'] as $sVariableName=>$mVariable) {
-					${$sVariableName} = $mVariable;
-				}
-				ob_start();
-				$sLayoutPath = $GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['layout']['path'] . '/';
-				$sLayoutPath .= $this->sLayout . '/layout.' . $this->sLayout . '.php';
-				include($sLayoutPath);
-				$this->sHtmlContent = ob_get_contents();
-				ob_end_clean();
+				$this->getLayout();
 			} else {
 				$this->sHtmlContent = $this->sControllerContent;
 			}
@@ -50,6 +44,21 @@ Class Pabana_Core_Controller {
 		} else {
 			ob_end_flush();
 		}
+	}
+	
+	private function getLayout() {
+		foreach($GLOBALS['pabanaInternalStorage']['layoutBridge'] as $sVariableName=>$mVariable) {
+			${$sVariableName} = $mVariable;
+		}
+		ob_start();
+		$sLayoutPath = $GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . $GLOBALS['pabanaConfigStorage']['layout']['path'] . '/';
+		$sLayoutInit = $sLayoutPath . $this->sLayout . '/layout.init.php';
+		$sLayoutFile = $sLayoutPath . $this->sLayout . '/layout.' . $this->sLayout . '.php';
+		include($sLayoutInit);
+		$this->oLayout->mergeDom($this->oView);
+		include($sLayoutFile);
+		$this->sHtmlContent = ob_get_contents();
+		ob_end_clean();
 	}
 	
 	final public function disableLayout() {
@@ -68,7 +77,7 @@ Class Pabana_Core_Controller {
 		$this->bViewEnable = 1;
 	}
 	
-	final public function getContent() {
+	final public function getControllerContent() {
 		return $this->sControllerContent;
 	}
 	
