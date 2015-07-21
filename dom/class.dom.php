@@ -1,11 +1,16 @@
 <?php
 Class Pabana_Dom {
+	private $_oPabanaDebug;
 	private $arsDoctypes = array();
 	private $arsCharsets = array();
 	private $arsTitles = array();
 	private $arsLinks = array();
 	private $arsMetas = array();
 	private $arsScripts = array();
+	
+	public function __construct() {
+		$this->_oPabanaDebug = $GLOBALS['pabanaInternalStorage']['debug'];
+	}
 	
 	public function mergeDom($oDom) {
 		$this->arsDoctypes = array_merge($this->arsDoctypes, $oDom->getDoctypes());
@@ -120,7 +125,7 @@ Class Pabana_Dom {
 		);
 		$arsKeyCharset = array_keys($arsCharset);
 		if(!in_array($sCharset, $arsKeyCharset)) {
-			echo 'Charset Undefined';
+			$this->_oPabanaDebug->exception(PE_ERROR, 'DOM_CHARSET_NAME', 'Charset ' . $sCharset . ' isn\'t defined');
 		} else {
 			if($sDoctype == 'HTML5') {
 				return '<meta charset="' . $arsCharset[$sCharset] . '">' . PHP_EOL;
