@@ -2,11 +2,13 @@
 class Pabana_Database {
 	private $armDatabaseConnexion = array();
 	private $_oPabanaDebug;
-	private $_oPdo;
+	private $_oCurrentPdo;
 	private $_sCurrentConnexion = null;
 	private $_armInternalDatabase;
+	private $_oCurrentStatement;
 	
 	public function __construct() {
+		$this->_oPabanaDebug = $GLOBALS['pabanaInternalStorage']['debug'];
 	}
 	
 	public function setConnexion($armConnexion) {
@@ -19,6 +21,10 @@ class Pabana_Database {
 		if(isset($armConnexion['password'])) {
 			$sDatabasePassword = $armConnexion['password'];
 		}
+		$sDatabaseCharset = '';
+		if(isset($armConnexion['charset'])) {
+			$sDatabaseCharset = $armConnexion['charset'];
+		}
 		if($armConnexion['dbms'] == 'access') {
 			$sDsn = $this->_getAccessDsn($armConnexion);
 		} elseif($armConnexion['dbms'] == 'mysql') {
@@ -27,7 +33,8 @@ class Pabana_Database {
 		$GLOBALS['pabanaInternalStorage']['database'][$sConnexion] = array(
 			'dsn' => $sDsn,
 			'user' => $sDatabaseUser,
-			'password' => $sDatabasePassword
+			'password' => $sDatabasePassword,
+			'charset' => $sDatabaseCharset
 		);
 		return $this;
 	}
@@ -73,8 +80,8 @@ class Pabana_Database {
 				PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
 			);
 			$cnxPdo = new PDO($sDsn, $sDatabaseUser, $sDatabasePassword, $armPdoOption);
-			$this->_oCurrentPdo = $cnxPdo;
 			$GLOBALS['pabanaInternalStorage']['database'][$sConnexion]['pdo'] = $cnxPdo;
+			$this->_oCurrentPdo = $cnxPdo;
 			$this->_sCurrentConnexion = $sConnexion;
 		}
 		catch (PDOException $oException) {
@@ -86,7 +93,9 @@ class Pabana_Database {
 	public function close($sConnexion) {
 		if(isset($GLOBALS['pabanaInternalStorage']['database'][$sConnexion]['pdo'])) {
 			$GLOBALS['pabanaInternalStorage']['database'][$sConnexion]['pdo'] = null;
-			$this->_oPdo = null;
+			if($this->_sCurrentConnexion == $sConnexion) {
+				$this->_sCurrentConnexion = null;
+			}
 			return $this;
 		} else {
 			return false;
@@ -102,21 +111,79 @@ class Pabana_Database {
 	}
 	
 	public function setCurrentConnexion($sConnexion) {
-		$this->_oPdo = $GLOBALS['pabanaInternalStorage']['database'][$sConnexion]['pdo'];
+		$this->_sCurrentConnexion = $sConnexion;
+		$this->_oCurrentPdo = $GLOBALS['pabanaInternalStorage']['database'][$sConnexion]['pdo'];
+		return $this;
+	}
+	
+	private function charsetConversion($mValue, $bOut = true) {
+		if(isset($GLOBALS['pabanaConfigStorage']['database']['charset_conversion']) && $GLOBALS['pabanaConfigStorage']['database']['charset_conversion'] == 'true') {
+			$sPabanaCharset = $GLOBALS['pabanaConfigStorage']['pabana']['charset'];
+			$sDatabaseCharset = $GLOBALS['pabanaInternalStorage']['database'][$this->_sCurrentConnexion]['charset'];
+			if($bOut === true) {
+				$sInCharset = $sPabanaCharset;
+				$sOutCharset = $sDatabaseCharset;
+			} else {
+				$sInCharset = $sDatabaseCharset;
+				$sOutCharset = $sPabanaCharset;
+			}
+			$oLocalization = new Pabana_Localization();
+			$mValue = $oLocalization->changeCharset($mValue, $sInCharset, $sOutCharset);
+		}
+		return $mValue;
 	}
 	
 	public function exec($sQuery) {
+		$sCharsetQuery = $this->charsetConversion($sQuery, true);
 		try {
-			return $this->_oPdo->exec($sQuery);
+			return $this->_oCurrentPdo->exec($sCharsetQuery);
 		}
 		catch (PDOException $e) {
-			$this->_oPabanaDebug->exception(PE_ERROR, 'DATABASE_EXEC', $e->getMessage());
+			$this->_oPabanaDebug->exception(PE_ERROR, 'DATABASE_EXEC', $sQuery . '<br />' . $e->getMessage());
+			return false;
+		}
+	}
+	
+	public function query($sQuery) {
+		$sCharsetQuery = $this->charsetConversion($sQuery, true);
+		try {
+			$this->_oCurrentStatement = $this->_oCurrentPdo->query($sCharsetQuery);
+			return $this;
+		}
+		catch (PDOException $e) {
+			$this->_oPabanaDebug->exception(PE_ERROR, 'DATABASE_QUERY', $sQuery . '<br />' . $e->getMessage());
+			return false;
+		}
+	}
+	
+	public function fetch() {
+		try {
+			$armRow = $this->_oCurrentStatement->fetch(PDO::FETCH_ASSOC);
+			return $this->charsetConversion($armRow, false);
+		}
+		catch (PDOException $e) {
+			$this->_oPabanaDebug->exception(PE_ERROR, 'DATABASE_FETCH', $e->getMessage());
+			return false;
+		}
+	}
+	
+	public function fetchAll() {
+		try {
+			$armRow = $this->_oCurrentStatement->fetchAll(PDO::FETCH_ASSOC);
+			return $this->charsetConversion($armRow, false);
+		}
+		catch (PDOException $e) {
+			$this->_oPabanaDebug->exception(PE_ERROR, 'DATABASE_FETCHALL', $e->getMessage());
+			return false;
 		}
 	}
 	
 	public function getPdoObject($sConnexion) {
-		return $GLOBALS['pabanaInternalStorage']['database'][$sConnexion]['pdo'];
-		var_dump($GLOBALS['pabanaInternalStorage']['database']);
+		return $this->_oCurrentPdo;
+	}
+	
+	public function escape($sQuery) {
+		return str_replace("'", "''", $sQuery);
 	}
 }
 ?>
