@@ -1,142 +1,210 @@
 <?php
 class Pabana_Mail {
-
-	private $armRecipient = '';
-	private $sSenderName = '';
-	private $sSenderAddress = '';
-	private $sSubject = '';
-	private $sHtmlContent = '';
+	private $_armRecipient = array(
+		'to' => array(),
+		'cc' => array(),
+		'bcc' => array()
+	);
+	private $_armAttachment = array();
+	private $_armSender = array();
+	private $_armReply = array();
+	private $_sSubject = 'No title';
+	private $_sHtmlContent = '';
+	private $_sTextContent = '';
+	private $_sMailer = 'Pabana Mail';
+	private $_nPriority = 1;
+	private $_sBoundary;
+	private $_sCharset;
+	private $_sMailContent;
+	private $_sHeaderContent;
 	
-	public function __construct($armSender, $armAddressRecipient, $sEmailSubject = 'E-mail automatique merci de ne pas repondre'){
-		if (preg_match("#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#", $armSender[1])){
-			$this->sSenderName = $armSender[0];
-			$this->sSenderAddress = $armSender[1];
+	public function __construct(){
+		$this->setBoundary();
+		$this->_sCharset = strtolower($GLOBALS['pabanaConfigStorage']['pabana']['charset']);
+	}
+	
+	private function addAttachment($sAttachmentPath){
+		$this->_armAttachment[] = array($sAttachmentPath);
+	}
+	
+	private function addRecipient($sRecipientType, $sRecipientAddress, $sRecipientName = ''){
+		if(filter_var($sRecipientAddress, FILTER_VALIDATE_EMAIL)) {
+			$this->_armRecipient[$sRecipientType][] = array($sRecipientAddress, $sRecipientName);
 		}
-		else{
-			echo 'Erreur : le format du mail de l\'expéditeur n\'est pas correct';
-		}
-		foreach($armAddressRecipient as $sAddressRecipient){
-			if (preg_match("#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#", $sAddressRecipient)){
-				$this->armRecipient[] = $sAddressRecipient;
+	}
+	
+	public function addRecipientTo($sRecipientAddress, $sRecipientName = ''){
+		$this->addRecipient('to', $sRecipientAddress, $sRecipientName);
+	}
+	
+	public function addRecipientCc($sRecipientAddress, $sRecipientName = ''){
+		$this->addRecipient('cc', $sRecipientAddress, $sRecipientName);
+	}
+	
+	public function addRecipientBcc($sRecipientAddress, $sRecipientName = ''){
+		$this->addRecipient('bcc', $sRecipientAddress, $sRecipientName);
+	}
+	
+	public function setCharset($sCharset){
+		$this->_sCharset = $sCharset;
+	}
+	
+	public function setSender($sSenderAddress, $sSenderName = ''){
+		$this->_armSender = array($sSenderAddress, $sSenderName);
+	}
+	
+	public function setReply($sReplyAddress, $sReplyName = ''){
+		$this->_armReply = array($sReplyAddress, $sReplyName);
+	}
+	
+	public function setSubject($sSubject){
+		$this->_sSubject = $sSubject;
+	}
+	
+	public function setHtmlContent($sHtmlContent){
+		$this->_sHtmlContent = $sHtmlContent;
+	}
+	
+	public function setTextContent($sTextContent){
+		$this->_sTextContent = $sTextContent;
+	}
+	
+	public function setMailer($sMailer){
+		$this->_sMailer = $sMailer;
+	}
+	
+	public function setPriority($nPriority){
+		$this->_nPriority = $nPriority;
+	}
+	
+	private function setBoundary() {
+		$this->_sBoundary = uniqid('Pabana-Mail-') . '-' . md5(rand());
+		$this->_sBoundaryAlt = uniqid('Pabana-Mail-') . '-' . md5(rand());
+	}
+	
+	public function getSender() {
+		if(!empty($this->_armSender)) {
+			$sSender = '';
+			if(!empty($this->_armSender[1])) {
+				$sSender .= '"' . $this->_armSender[1] . '" ';
 			}
-			else{
-				echo 'Erreur : le format du mail du destinataire n\'est pas correct';
+			$sSender .= '<' . $this->_armSender[0] . '>';
+			return $sSender;
+		} else {
+			return NULL;
+		}
+	}
+	
+	public function getReply() {
+		if(!empty($this->_armReply)) {
+			$sReply = '';
+			if(!empty($this->_armReply[1])) {
+				$sReply .= '"' . $this->_armReply[1] . '" ';
+			}
+			$sReply .= '<' . $this->_armReply[0] . '>';
+			return $sReply;
+		} else {
+			return NULL;
+		}
+	}
+	
+	public function getRecipientTo() {
+		return $this->getRecipient('to');
+	}
+	
+	public function getRecipientCc() {
+		return $this->getRecipient('cc');
+	}
+	
+	public function getRecipientBcc() {
+		return $this->getRecipient('bcc');
+	}
+	
+	private function getRecipient($sRecipientArray) {
+		$armRecipientList = array();
+		if(!empty($this->_armRecipient[$sRecipientArray])) {
+			$armRecipientList = '';
+			foreach($this->_armRecipient[$sRecipientArray] as $armRecipient) {
+				$sRecipient = '';
+				if(!empty($armRecipient[1])) {
+				$sRecipient .= '"' . $armRecipient[1] . '" ';
+				}
+				$sRecipient .= '<' . $armRecipient[0] . '>';
+				$armRecipientList[] = $sRecipient;
 			}
 		}
-		$this->sSubject = $sEmailSubject;
-		$this->sHtmlContent = '';
+		return implode(', ', $armRecipientList);
 	}
 	
-	public function setContent($sNewContent){
-		$this->sHtmlContent = 
-'<!DOCTYPE html>
-<html lang="fr">
-	<head>
-		<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-		<meta charset="utf-8" />
-	</head>
-	<body style="background: #F5F5F5;">
-		<table width="100%" height="100%"cellspacing="0" cellpadding="0" border="0" bgcolor="#DFDFDF" style="font-family:Helvetica,Arial,sans-serif;border-collapse:collapse;width:100%!important;font-family:Helvetica,Arial,sans-serif;margin:0;padding:0">
-			<tbody>
-				<tr>
-					<td>
-						<table width="100%" cellspacing="0" cellpadding="0" border="0" align="center" style="table-layout:fixed">
-							<tbody>
-								<tr>
-									<td align="center">
-										<table width="800" cellspacing="0" cellpadding="0" border="0" style="font-family:Helvetica,Arial,sans-serif;min-width:290px">
-											<tbody>
-												<tr>
-													<td>
-														<table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#DDDDDD" style="font-family:Helvetica,Arial,sans-serif">
-															<tbody>
-																<tr>
-																	<td height="21" width="95" valign="middle" align="left">
-																		<a style="text-decoration:none;border:none;display:block;min-height:21px;width:100%" href="http://dev.chauffeurexpert.com/img/logo.png" target="_blank">
-																			<img class="CToWUd" height="38" width="165" src="http://dev.chauffeurexpert.com/img/logo.png" alt="ChauffeurExpert" style="border:none;text-decoration:none">
-																		</a>
-																	</td>
-																</tr>
-																<tr>
-																	<td height="20" valign="middle" align="left"></td>
-																</tr>
-																<tr>
-																	<td height="10" bgcolor="#0072c6" valign="middle" align="left"></td>
-																</tr>
-																<tr>
-																	<td height="10" bgcolor="#FFFFFF" valign="middle" align="left">
-																		<table width="100%" cellspacing="0" cellpadding="0" border="0" >
-																			<tbody>
-																				<tr>
-																					<td width="20"></td>
-																					<td align="left" style="color:#333333;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:18px">
-																						<table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#FFFFFF" style="font-family:Helvetica,Arial,sans-serif">
-																							<tbody>
-																								<tr><td height="20"></td></tr>'.str_replace(array('\n','\r','<br>','<br />','<br/>'),'</td></tr><tr><td height="15"></td></tr><tr><td>',htmlspecialchars($sNewContent)).'
-																							</tbody>
-																						</table>
-																					</td>
-																					<td width="20"></td>
-																				</tr>
-																			</tbody>
-																		</table>
-																	</td>
-																</tr>																	
-															</tbody>
-														</table>
-													</td>
-												</tr>
-											</tbody>
-										</table>
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</td>
-				</tr>
-			</tbody>
-		</table>
-	</body>
-</html>';
+	public function getHeaderContent() {
+		/* Header content */
+		$this->_sHeaderContent = '';
+		$sSender = $this->getSender();
+		if(!empty($sSender)) {
+			$this->_sHeaderContent .= 'From: ' . $sSender . PHP_EOL;
+		}
+		$sReply = $this->getReply();
+		if(!empty($sReply)) {
+			$this->_sHeaderContent .= 'Reply-to: ' . $sReply . PHP_EOL;
+		}
+		$sRecipientCc = $this->getRecipientCc();
+		if(!empty($sRecipientCc)) {
+			$this->_sHeaderContent .= 'Cc: ' . $sRecipientCc . PHP_EOL;
+		}
+		$sRecipientBcc = $this->getRecipientBcc();
+		if(!empty($sRecipientBcc)) {
+			$this->_sHeaderContent .= 'Bcc: ' . $sRecipientBcc . PHP_EOL;
+		}
+		if(!empty($this->_sMailer)) {
+			$this->_sHeaderContent .= 'X-Mailer: ' . $this->_sMailer . PHP_EOL;
+		}
+		$this->_sHeaderContent .= 'MIME-Version: 1.0' . PHP_EOL;
+		if(!empty($this->_armAttachment)) {
+			$sContentType = 'multipart/mixed';
+		} else {
+			$sContentType = 'multipart/alternative';
+		}
+		$this->_sHeaderContent .= 'Content-Type: ' . $sContentType . '; boundary="' . $this->_sBoundary . '"' . PHP_EOL . PHP_EOL;
 	}
 	
-	public function setSenderName($sNewSenderName){
-		$this->sSenderName = $sNewSenderName;
+	public function getEmailContent() {
+		// Load localization class
+		$oLocalization = new Pabana_Localization();
+		/* Text content */
+		if(!empty($this->_sTextContent)) {
+			if($GLOBALS['pabanaConfigStorage']['pabana']['charset'] != $this->_sCharset) {
+				$sTextContent = $oLocalization->changeCharset($this->_sTextContent, $GLOBALS['pabanaConfigStorage']['pabana']['charset'], $this->_sCharset);
+			} else {
+				$sTextContent = $this->_sTextContent;
+			}
+			$this->_sMailContent .= '--' . $this->_sBoundary . PHP_EOL;
+			$this->_sMailContent .= 'Content-Type: text/plain; charset="' . $this->_sCharset . '"' . PHP_EOL;
+			$this->_sMailContent .= 'Content-Transfer-Encoding: 8bit' . PHP_EOL . PHP_EOL;
+			$this->_sMailContent .= $sTextContent . PHP_EOL . PHP_EOL;
+		}
+		/* Html content */
+		if(!empty($this->_sHtmlContent)) {
+			if($GLOBALS['pabanaConfigStorage']['pabana']['charset'] != $this->_sCharset) {
+				$sHtmlContent = $oLocalization->changeCharset($this->_sHtmlContent, $GLOBALS['pabanaConfigStorage']['pabana']['charset'], $this->_sCharset);
+			} else {
+				$sHtmlContent = $this->_sHtmlContent;
+			}
+			$this->_sMailContent .= '--' . $this->_sBoundary . PHP_EOL;
+			$this->_sMailContent .= 'Content-Type: text/html; charset="' . $this->_sCharset . '"' . PHP_EOL;
+			$this->_sMailContent .= 'Content-Transfer-Encoding: 8bit' . PHP_EOL . PHP_EOL;
+			$this->_sMailContent .= $sHtmlContent . PHP_EOL . PHP_EOL;
+		}
+		$this->_sMailContent .= '--' . $this->_sBoundary . '--';
 	}
 	
-	public function setSenderAddress($sNewSenderAdress){
-		$this->sSenderAddress = $sNewSenderAdress;
-	}
-	
-	public function setRecepient($armNewRecipient){
-		$this->armRecipient = $armNewRecipient;
-	}
-	
-	public function setSubject($sNewSubject){
-		$this->sSubject = $sNewSubject;
+	public function save(){
+		
 	}
 	
 	public function send(){
-		$backSpace = chr(13).chr(10);
-		$boundary = '-----='.md5(rand());
-		$header = 'From: "'.$this->sSenderName.'"<'.$this->sSenderAddress.'>"'.$backSpace;
-		$header.= 'Reply-to: "'.$this->sSenderName.'"<'.$this->sSenderAddress.'>"'.$backSpace;
-		$header.= 'MIME-Version: 1.0'.$backSpace;
-		$header.= 'Content-Type: multipart/alternative;'.$backSpace.' boundary="'.$boundary.'"'.$backSpace;
-		$message = $backSpace.'--'.$boundary.$backSpace;
-		$message.= 'Content-Type: text/html; charset="ISO-8859-1"'.$backSpace;
-		$message.= 'Content-Transfer-Encoding: 8bit'.$backSpace;
-		$message.= $backSpace.$this->sHtmlContent.$backSpace;
-		$message.= $backSpace.'--'.$boundary.'--'.$backSpace;
-		$message.= $backSpace.'--'.$boundary.'--'.$backSpace;
-		try{
-			return mail(implode(',',$this->armRecipient),$this->sSubject,$message,$header);
-		}
-		catch(Exception $e) { 
-			echo 'Erreur : '.$e->getMessage().'<br />';
-			echo 'N° : '.$e->getCode();
-		}
+		$this->getHeaderContent();
+		$this->getEmailContent();
+		return mail($this->getRecipientTo(), $this->_sSubject, $this->_sMailContent, $this->_sHeaderContent);
 	}
-	
 }
 ?>
