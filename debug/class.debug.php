@@ -53,6 +53,7 @@ class Pabana_Debug {
 	}
 	
 	public function exception($nErrorLevel = 1, $sErrorCode = 'UNKNOW', $sErrorMessage = 'Unknow error') {
+		$oHttp = new Pabana_Http();
 		$this->armError = array(
 			'level' => $nErrorLevel,
 			'code' => $sErrorCode,
@@ -65,7 +66,7 @@ class Pabana_Debug {
 			'generation' => round(microtime(true) - $GLOBALS['pabanaInternalStorage']['pabana']['startTime'], 4)
 		);
 		if($this->arbDebugShow[$nErrorLevel] == true) {
-			if(PH_CONSOLE == true) {
+			if(PH_CONSOLE == true || $oHttp->isAjax()) {
 				echo $this->exceptionText();
 			} else {
 				echo $this->exceptionHtml();
@@ -87,10 +88,12 @@ class Pabana_Debug {
 		}
     }
 	
-	private function exceptionText($nErrorLevel, $sErrorCode, $sErrorMessage, $armBackTrace) {
-		$sReturnText = $this->arsErrorLevel[$nErrorLevel] . ': ';
-		$sReturnText .= strip_tags($sErrorMessage) . ' ';
-		$sReturnText .= '(Error code : ' . $sErrorCode .')' . PHP_EOL;
+	private function exceptionText() {
+		$sErrorMessage = str_replace('<br />', PHP_EOL, $this->armError['message']);
+		$sErrorMessage = strip_tags($sErrorMessage);
+		$sReturnText = $this->arsErrorLevel[$this->armError['level']] . ': ';
+		$sReturnText .= $sErrorMessage . ' ';
+		$sReturnText .= '(Error code : ' . $this->armError['code'] .')' . PHP_EOL;
 		$sReturnText .= 'Class: ' . $this->armBackTrace[1]['class'] . ' ';
 		$sReturnText .= 'on method ' . $this->armBackTrace[1]['function'] . PHP_EOL;
 		if(isset($this->armBackTrace[1]['file'])) {
@@ -136,9 +139,19 @@ class Pabana_Debug {
 			$sReturnText .= '<br /><strong>Backtrace:</strong><br />';
 			$nCountBacktrace = count($this->armBackTrace);
 			for($i = 1; $i < $nCountBacktrace; $i++) {
-				$sArgument = print_r($this->armBackTrace[$i]['args'], true);
 				$sReturnText .= '#' . $i . ' ';
-				$sReturnText .= $this->armBackTrace[$i]['class'] . $this->armBackTrace[$i]['type'] . $this->armBackTrace[$i]['function'] . '(' . $sArgument .')';
+				if(!empty($this->armBackTrace[$i]['class'])) {
+					$sReturnText .= $this->armBackTrace[$i]['class'];
+				}
+				if(!empty($this->armBackTrace[$i]['type'])) {
+					$sReturnText .= $this->armBackTrace[$i]['type'];
+				}
+				if(!empty($this->armBackTrace[$i]['function'])) {
+					$sReturnText .= $this->armBackTrace[$i]['function'];
+				}
+				if(!empty($this->armBackTrace[$i]['args'])) {
+					$sReturnText .= '(' . print_r($this->armBackTrace[$i]['args'], true) .')';
+				}
 				$sReturnText .= ' called at [' . $this->armBackTrace[$i]['file'] . ':' . $this->armBackTrace[$i]['line'] . ']<br />';
 			}
 		}
