@@ -13,9 +13,11 @@
 class Pabana_File {
 	private $sFilePath;
 	private $hFile;
+	private $_oPabanaDebug;
 	
 	public function __construct($sFilePath = '') {
 		$this->sFilePath = $sFilePath;
+		$this->_oPabanaDebug = $GLOBALS['pabanaInternalStorage']['debug'];
     }
 	
 	public function __toString() {
@@ -66,6 +68,10 @@ class Pabana_File {
 		return fileatime($this->sFilePath);
 	}
 	
+	public function getDirectory() {
+		return dirname($this->sFilePath);
+	}
+	
 	public function getEncoding() {
 		$hFileInfo = finfo_open(FILEINFO_MIME_ENCODING);
 		$sEncoding = finfo_file($hFileInfo, $this->sFilePath);
@@ -94,10 +100,6 @@ class Pabana_File {
 	
 	public function getName() {
 		return basename($this->sFilePath);
-	}
-	
-	public function getParent() {
-		return dirname($this->sFilePath);
 	}
 	
 	public function getSize() {
@@ -131,7 +133,7 @@ class Pabana_File {
 	}
 	
 	public function move($sNewFilePath) {
-		if(is_uploaded_file($this->sFilePath)) {
+		if($this->isUpload()) {
 			move_uploaded_file($this->sFilePath, $sNewFilePath);
 		} else {
 			rename($this->sFilePath, $sNewFilePath);
@@ -174,6 +176,24 @@ class Pabana_File {
 	
 	public function remove() {
 		unlink($this->sFilePath);
+		return $this;
+	}
+	
+	public function upload($sFilePath, $nMaxSize = 0, $arsAllowMimeType = array()) {
+		$oUploadFile = new Pabana_File($sFilePath);
+		if(!is_dir($oUploadFile->getDirectory())) {
+			$this->_oPabanaDebug->exception(PE_ERROR, 'FILE_UPLOAD_DIRECTORY', 'Upload Directory don\'t exist');
+			return false;
+		}
+		if($nMaxSize != 0 && $this->getSize() > $nMaxSize) {
+			$this->_oPabanaDebug->exception(PE_ERROR, 'FILE_UPLOAD_SIZE', 'Upload file is larger than alowed size');
+			return false;
+		}
+		if(!empty($arsAllowMimeType) && !in_array($this->getMimeType(), $arsAllowMimeType)) {
+			$this->_oPabanaDebug->exception(PE_ERROR, 'FILE_UPLOAD_MIME', 'Upload file don\'t have allowed mime-type');
+			return false;
+		}
+		$this->move($oUploadFile);
 		return $this;
 	}
 	
