@@ -12,17 +12,16 @@
 */
 
 /**
- * Initialize Pabana Framework
+ * Pabana_Core : Initialize Pabana Framework
  *
- * Long description of class.
- * Can use multiple lines.
+ * Core class of Pabana
+ * This class start Pabana Framework
  *
  * @link http://pabana.co/documentation/class/name/core
  */
 class Pabana_Core {
-	// Public object for debug class
-	public $oPabanaDebug;
-	public $oPabanaGlobal;
+	// Declaration of Pabana_Debug Object
+	private $_oPabanaDebug;
 	
 	public function __construct() {
 		// Include Pabana_Core constant
@@ -30,15 +29,13 @@ class Pabana_Core {
 		// Include Pabana_Debug class
 		include('pabana/debug/class.debug.php');
 		// Initialise Pabana_Debug class
-		$this->oPabanaDebug = new Pabana_Debug(PE_ALL);
+		$this->_oPabanaDebug = new Pabana_Debug(PE_ALL);
 		// Start local storage
 		$this->setLocalStorage();
 		// Check if this version of PHP can use Pabana
 		$this->checkPhpVersion();
 		// Load class autoloader function
 		$this->autoLoader();
-		// Load Global method of Pabana_Core
-		$this->oPabanaGlobal = new Pabana_Core_Global();
     }
 	
 	private function setLocalStorage() {
@@ -58,7 +55,6 @@ class Pabana_Core {
 		$GLOBALS['pabanaInternalStorage'] = array(
 			'database' => array(),
 			'debug' => null,
-			'dom' => null,
 			'layoutBridge' => array(),
 			'pabana' => array(
 				'startTime' => $_SERVER['REQUEST_TIME_FLOAT'],
@@ -76,7 +72,7 @@ class Pabana_Core {
 		if(version_compare(PHP_VERSION, PC_PHP_MIN_VERSION, '<')) {
 			// If current PHP version is less than require version, show error
 			$sErrorMessage = 'Your PHP version "' . PHP_VERSION . '" is less than require version of PHP "' . PC_PHP_MIN_VERSION . '" to use Pabana';
-			$this->oPabanaDebug->exception(PE_CRITICAL, 'PHP_VERSION', $sErrorMessage);
+			$this->_oPabanaDebug->exception(PE_CRITICAL, 'PHP_VERSION', $sErrorMessage);
 		}
 	}
 	
@@ -104,7 +100,7 @@ class Pabana_Core {
 				} else {
 					// Show error message coz class file don't exists
 					$sErrorMessage = 'Autoloading of "' . $sAutoLoadClass . '" abort, cause "' . $sClassPath . '" file can\'t be read';
-					$this->oPabanaDebug->exception(PE_ERROR, 'CLASS_AUTOLOAD', $sErrorMessage);
+					$this->_oPabanaDebug->exception(PE_ERROR, 'CLASS_AUTOLOAD', $sErrorMessage);
 				}
 			} else {
 				// Try to call user defined autoloader
@@ -121,7 +117,7 @@ class Pabana_Core {
 		$oConfigFile = new Pabana_File($sConfigPath);
 		// Check if this file exists
 		if(!$oConfigFile->exists()) {
-			$this->oPabanaDebug->exception(PE_WARNING, 'CORE_CONFIG_FILE', 'File ' . $oConfigFile . ' isn\'t found');
+			$this->_oPabanaDebug->exception(PE_WARNING, 'CORE_CONFIG_FILE', 'File ' . $oConfigFile . ' isn\'t found');
 		}
 		// Get extension of this file
 		$sConfigFileExtension = $oConfigFile->getExtension();
@@ -133,7 +129,7 @@ class Pabana_Core {
 			$oConfigFileParse = new Pabana_Parse_Yaml($oConfigFile);
 		} else {
 			$sErrorMessage = '*.' . $sConfigFileExtension . ' file isn\'t accepted by <strong>Pabana_Debug->getConfigByFile()</strong>';
-			$this->oPabanaDebug->exception(PE_WARNING, 'CORE_CONFIG_FILETYPE', $sErrorMessage);
+			$this->_oPabanaDebug->exception(PE_WARNING, 'CORE_CONFIG_FILETYPE', $sErrorMessage);
 		}
 		// Put parse content on array
 		$armConfig = $oConfigFileParse->toArray();
@@ -149,6 +145,38 @@ class Pabana_Core {
 			// Merge environnement config on array with default configuration
 			$GLOBALS['pabanaConfigStorage'] = $armConfig[APPLICATION_ENV] + $GLOBALS['pabanaConfigStorage'];
 		}
+		// Init debug with config param
+		$this->initDebug();
+	}
+	
+	public function initDebug() {
+		$this->_oPabanaDebug = null;
+		$nDebugShow = 0;
+		if(isset($GLOBALS['pabanaConfigStorage']['debug']['show_level'])) {
+			$nDebugShow = $GLOBALS['pabanaConfigStorage']['debug']['show_level'];
+		}
+		$nDebugFile = 0;
+		if(isset($GLOBALS['pabanaConfigStorage']['debug']['file_level'])) {
+			$nDebugFile = $GLOBALS['pabanaConfigStorage']['debug']['file_level'];
+		}
+		$nDebugDatabase = 0;
+		if(isset($GLOBALS['pabanaConfigStorage']['debug']['database_level'])) {
+			$nDebugDatabase = $GLOBALS['pabanaConfigStorage']['debug']['database_level'];
+		}
+		$bDebugEnvironment = true;
+		if(isset($GLOBALS['pabanaConfigStorage']['debug']['environment'])) {
+			$bDebugEnvironment = $GLOBALS['pabanaConfigStorage']['debug']['environment'];
+		}
+		$bDebugBacktrace = true;
+		if(isset($GLOBALS['pabanaConfigStorage']['debug']['backtrace'])) {
+			$bDebugBacktrace = $GLOBALS['pabanaConfigStorage']['debug']['backtrace'];
+		}
+		$bDebugLink = true;
+		if(isset($GLOBALS['pabanaConfigStorage']['debug']['link'])) {
+			$bDebugLink = $GLOBALS['pabanaConfigStorage']['debug']['link'];
+		}
+		$this->_oPabanaDebug = new Pabana_Debug($nDebugShow, $nDebugFile, $nDebugDatabase, $bDebugEnvironment, $bDebugBacktrace, $bDebugLink);
+		$GLOBALS['pabanaInternalStorage']['debug'] = $this->_oPabanaDebug;
 	}
 	
 	public function run() {
@@ -170,7 +198,7 @@ class Pabana_Core {
 				} else {
 					header($_SERVER['SERVER_PROTOCOL'].' 404 Not Found', true, 404); 
 					$sErrorMessage = 'Loading of "URI_FILE" abort, cause "' . $oUriFile . '" file can\'t be read';
-					$this->oPabanaDebug->exception(PE_WARNING, 'URI_FILE_LOAD', $sErrorMessage);
+					$this->_oPabanaDebug->exception(PE_WARNING, 'URI_FILE_LOAD', $sErrorMessage);
 					exit();
 				}
 			}
@@ -185,7 +213,7 @@ class Pabana_Core {
 			$oBootstrapFile->import();
 		} else {
 			$sErrorMessage = 'Loading of "Bootstrap" abort, cause "' . $oBootstrapFile . '" file can\'t be read';
-			$this->oPabanaDebug->exception(PE_ERROR, 'BOOTSTRAP_LOAD', $sErrorMessage);
+			$this->_oPabanaDebug->exception(PE_ERROR, 'BOOTSTRAP_LOAD', $sErrorMessage);
 		}
 	}
 	
@@ -202,14 +230,14 @@ class Pabana_Core {
 			$sControllerName = $sController . "Controller";
 			if(!method_exists($sControllerClassName, $sControllerName)) {
 				$sErrorMessage = 'Loading of "' . $sControllerClassName . '" abort, cause "' . $sControllerName . '" isn\'t defined';
-				$this->oPabanaDebug->exception(PE_ERROR, 'CONTROLLER_LOAD', $sErrorMessage);
+				$this->_oPabanaDebug->exception(PE_ERROR, 'CONTROLLER_LOAD', $sErrorMessage);
 			}
 			$oController->{$sControllerName}();
 			$oController = null;
 		} else {
 			header($_SERVER['SERVER_PROTOCOL'].' 404 Not Found', true, 404); 
 			$sErrorMessage = 'Loading of "controller.' . $sController . '.php" abort, cause "' . $oControllerFile . '" file can\'t be read';
-			$this->oPabanaDebug->exception(PE_WARNING, 'CONTROLLER_LOAD', $sErrorMessage);
+			$this->_oPabanaDebug->exception(PE_WARNING, 'CONTROLLER_LOAD', $sErrorMessage);
 			exit();
 		}
 	}
