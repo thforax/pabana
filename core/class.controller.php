@@ -26,11 +26,7 @@ Class Pabana_Core_Controller {
 		// Check if a fatal exception was catched by Pabana_Debug
 		if($GLOBALS['pabanaInternalStorage']['pabana']['fatalException'] != 1 ) {
 			if($this->bViewEnable == 1) {
-				foreach($GLOBALS['pabanaInternalStorage']['viewBridge'] as $sVariableName=>$mVariable) {
-					${$sVariableName} = $mVariable;
-				}
-				$sViewPath = $GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . '/application/module/' . $GLOBALS['pabanaInternalStorage']['router']['module'] . '/view/view.' . $this->sView . '.php';
-				include($sViewPath);
+				echo $this->getViewContent($this->sView);
 			}
 			$this->sControllerContent = ob_get_contents();
 			ob_end_clean();
@@ -75,6 +71,18 @@ Class Pabana_Core_Controller {
 	
 	final public function enableView() {
 		$this->bViewEnable = 1;
+	}
+	
+	final public function getViewContent($sViewName) {
+		ob_start();
+		foreach($GLOBALS['pabanaInternalStorage']['viewBridge'] as $sVariableName=>$mVariable) {
+			${$sVariableName} = $mVariable;
+		}
+		$sViewPath = $GLOBALS['pabanaConfigStorage']['pabana']['application_path'] . '/application/module/' . $GLOBALS['pabanaInternalStorage']['router']['module'] . '/view/view.' . $sViewName . '.php';
+		include($sViewPath);
+		$sReturn = ob_get_contents();
+		ob_end_clean();
+		return $sReturn;
 	}
 	
 	final public function getControllerContent() {
