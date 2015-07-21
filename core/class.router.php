@@ -10,6 +10,7 @@ Class Pabana_Core_Router {
 		if($sRoutingType == 'default') {
 			$this->defaultRouting();
 		} else {
+			$this->prepareUriToMvc();
 			$this->mvcRouting();
 		}
 	}
@@ -18,10 +19,15 @@ Class Pabana_Core_Router {
 		$GLOBALS['pabanaInternalStorage']['router']['uri'] = $this->sUri;
 	}
 	
+	private function prepareUriToMvc() {
+		$arsReplaceUri = array('?', '=', '&');
+		$this->sUri = str_replace($arsReplaceUri, '/', $this->sUri);
+	}
+	
 	private function mvcRouting() {
 		$sModule = 'index';
 		$sController = 'index';
-		$arsUri = explode('/', $_SERVER['REQUEST_URI']);
+		$arsUri = explode('/', $this->sUri);
 		$nSplitUri = count($arsUri);
 		if($nSplitUri >= 2 && !empty($arsUri[1])) {
 			$sModule = $arsUri[1];
@@ -31,9 +37,6 @@ Class Pabana_Core_Router {
 		}
 		$sKeyGetVariable = '';
 		for($i=3; $i<$nSplitUri; $i++) {
-			if(empty($arsUri[$i])) {
-				break;
-			}
 			if(($i+1)%2 == 0) {
 				$sKeyGetVariable = urldecode($arsUri[$i]);
 				$this->arGetVariable[$sKeyGetVariable] = null;
