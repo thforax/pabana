@@ -83,16 +83,20 @@ class Pabana_Core {
 			if(stripos($sAutoLoadClass, 'Pabana') !== false) {
 				// Explode class name in array
 				$arsAutoLoadClass = explode('_', $sAutoLoadClass);
+				$arsAutoLoadClass = array_map('strtolower', $arsAutoLoadClass);
 				// Generate directory path for class
-				$sGeneralPath = strtolower($arsAutoLoadClass[0]) . '/' . strtolower($arsAutoLoadClass[1]) . '/';
+				$sGeneralPath = $arsAutoLoadClass[0] . '/' . $arsAutoLoadClass[1] . '/';
 				if(count($arsAutoLoadClass) == 2) {
 					// Autoloader class name eq Pabana_Module
-					$sClassPath = $sGeneralPath . 'class.' . strtolower($arsAutoLoadClass[1]) . '.php';
-					$sConstantPath = $sGeneralPath . 'constant.' . strtolower($arsAutoLoadClass[1]) . '.php';
+					$sClassPath = $sGeneralPath . 'class.' . $arsAutoLoadClass[1] . '.php';
+					$sConstantPath = $sGeneralPath . 'constant.' . $arsAutoLoadClass[1] . '.php';
 				} elseif(count($arsAutoLoadClass) == 3) {
 					// Autoloader class name eq Pabana_Module_Class
-					$sClassPath = $sGeneralPath . 'class.' . strtolower($arsAutoLoadClass[2]) . '.php';
-					$sConstantPath = $sGeneralPath . 'constant.' . strtolower($arsAutoLoadClass[1]) . '.php';
+					$sClassPath = $sGeneralPath . 'class.' . $arsAutoLoadClass[2] . '.php';
+					$sConstantPath = $sGeneralPath . 'constant.' . $arsAutoLoadClass[1] . '.php';
+				} elseif(count($arsAutoLoadClass) == 4) {
+					// Autoloader class name eq Pabana_Module_ClassParent_Class
+					$sClassPath = $sGeneralPath . $arsAutoLoadClass[2] . '/class.' . $arsAutoLoadClass[3] . '.php';
 				}
 				// If exists include class file
 				if(stream_resolve_include_path($sClassPath)) {
@@ -101,12 +105,6 @@ class Pabana_Core {
 					// Show error message coz class file don't exists
 					$sErrorMessage = 'Autoloading of "' . $sAutoLoadClass . '" abort, cause "' . $sClassPath . '" file can\'t be read';
 					$this->_oPabanaDebug->exception(PE_ERROR, 'CLASS_AUTOLOAD', $sErrorMessage);
-				}
-			} else {
-				// Try to call user defined autoloader
-				if(function_exists('customAutoLoader')) {
-					// If exists call it
-					customAutoLoader($sAutoLoadClass);
 				}
 			}
 		});
