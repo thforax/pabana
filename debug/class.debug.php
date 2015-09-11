@@ -66,7 +66,7 @@ class Pabana_Debug {
 			'generation' => round(microtime(true) - $GLOBALS['pabanaInternalStorage']['pabana']['startTime'], 4)
 		);
 		if($this->arbDebugShow[$nErrorLevel] == true) {
-			if(PH_CONSOLE == true || $oHttp->isAjax()) {
+			if($oHttp->isConsole() || $oHttp->isAjax()) {
 				echo $this->exceptionText();
 			} else {
 				echo $this->exceptionHtml();
@@ -104,6 +104,26 @@ class Pabana_Debug {
 			$sReturnText .= 'Date: ' . $this->armEnvironment['date'] . ' | ';
 			$sReturnText .= 'Memory usage: ' . $this->armEnvironment['memory'] . 'Mo | ';
 			$sReturnText .= 'Generation time: ' . $this->armEnvironment['generation'] . 's' . PHP_EOL;
+		}
+		if($this->bDebugBacktrace == true) {
+			$sReturnText .= PHP_EOL . 'Backtrace:' . PHP_EOL;
+			$nCountBacktrace = count($this->armBackTrace);
+			for($i = 1; $i < $nCountBacktrace; $i++) {
+				$sReturnText .= '#' . $i . ' ';
+				if(!empty($this->armBackTrace[$i]['class'])) {
+					$sReturnText .= $this->armBackTrace[$i]['class'];
+				}
+				if(!empty($this->armBackTrace[$i]['type'])) {
+					$sReturnText .= $this->armBackTrace[$i]['type'];
+				}
+				if(!empty($this->armBackTrace[$i]['function'])) {
+					$sReturnText .= $this->armBackTrace[$i]['function'];
+				}
+				if(!empty($this->armBackTrace[$i]['args'])) {
+					$sReturnText .= '(' . print_r($this->armBackTrace[$i]['args'], true) .')';
+				}
+				$sReturnText .= ' called at [' . $this->armBackTrace[$i]['file'] . ':' . $this->armBackTrace[$i]['line'] . ']' . PHP_EOL;
+			}
 		}
 		$sReturnText .= PHP_EOL;
 		return $sReturnText;

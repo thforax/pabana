@@ -138,6 +138,7 @@ class Pabana_File {
 		} else {
 			rename($this->sFilePath, $sNewFilePath);
 		}
+		$this->sFilePath = $sNewFilePath;
 		return $this;
 	}
 	
@@ -170,7 +171,7 @@ class Pabana_File {
 	}
 	
 	public function rename($sNewFileName) {
-		$this->move($sNewFileNam);
+		$this->move($sNewFileName);
 		return $this;
 	}
 	
